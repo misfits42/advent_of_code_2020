@@ -49,4 +49,11 @@ mod tests {
         let result = solve_part_1(&input);
         assert_eq!(996075, result);
     }
+
+    #[test]
+    fn test_d01_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day1.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(51810360, result);
+    }
 }

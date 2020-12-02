@@ -23,8 +23,33 @@ fn generate_input(input: &str) -> Vec<(usize, usize, String, String)> {
 fn solve_part_1(input: &Vec<(usize, usize, String, String)>) -> u64 {
     let mut valid_count = 0;
     for (lower, upper, c, password) in input {
-        let count = password.matches(c).count();
-        if count >= *lower && count <= *upper {
+        // Count number of times check character occurs in password
+        let count = &password.matches(c).count();
+        // Increase valid count if count within specified range (inclusive lower and upper)
+        if count >= lower && count <= upper {
+            valid_count += 1;
+        }
+    }
+    return valid_count;
+}
+
+#[aoc(day2, part2)]
+fn solve_part_2(input: &Vec<(usize, usize, String, String)>) -> u64 {
+    let mut valid_count = 0;
+    for (lower, upper, c, password) in input {
+        // Adjust lower and upper indices to accomodate for off-by-one
+        let lower = lower - 1;
+        let upper = upper - 1;
+        let mut count = 0;
+        // Check if validation character present at lower and upper indices
+        if lower <= password.len() - 1 && &password[lower..lower+1] == c {
+            count += 1;
+        }
+        if upper <= password.len() - 1 && &password[upper..upper+1] == c {
+            count += 1;
+        }
+        // Increment valid count if check character is at exactly one of the specified indices
+        if count == 1 {
             valid_count += 1;
         }
     }

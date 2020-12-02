@@ -5,7 +5,7 @@ fn generate_input(input: &str) -> Vec<(usize, usize, char, Vec<char>)> {
     let mut output: Vec<(usize, usize, char, Vec<char>)> = vec![];
     let password_regex = Regex::new(r"(\d+)-(\d+) ([a-z]): ([a-z]+)").unwrap();
     for line in input.lines() {
-        // Trim leading and training whitespace, then ignore empty lines
+        // Trim leading and trailing whitespace, then ignore empty lines
         let line = line.trim();
         if line.is_empty() {
             continue;

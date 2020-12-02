@@ -55,3 +55,22 @@ fn solve_part_2(input: &Vec<(usize, usize, String, String)>) -> u64 {
     }
     return valid_count;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_d02_p1_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day2.txt").unwrap());
+        let result = solve_part_1(&input);
+        assert_eq!(454, result);
+    }
+
+    #[test]
+    fn test_d02_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day2.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(649, result);
+    }
+}

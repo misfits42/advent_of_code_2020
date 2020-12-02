@@ -9,7 +9,7 @@ Implemented using the [cargo-aoc](https://github.com/gobanos/cargo-aoc) tool.
 | Day | Part 1 completed | Part 2 completed |
 |-----|------------------|------------------|
 | 1   | 2020-12-01       | 2020-12-01       |
-| 2   |                  |                  |
+| 2   | 2020-12-02       |                  |
 | 3   |                  |                  |
 | 4   |                  |                  |
 | 5   |                  |                  |

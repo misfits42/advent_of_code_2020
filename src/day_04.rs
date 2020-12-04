@@ -116,18 +116,7 @@ fn solve_part_2(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
                 PassportField::BirthYear => {
                     // Get string and check length
                     let val = passport.get(&field).unwrap();
-                    if val.len() != 4 {
-                        valid = false;
-                        break;
-                    }
-                    // Convert string to int and check if it falls outside of valid range
-                    let val = val.parse::<u64>();
-                    if val.is_err() {
-                        valid = false;
-                        break;
-                    }
-                    let val = val.unwrap();
-                    if val < 1920 || val > 2002 {
+                    if !check_year_string_range(&val, 1920, 2002) {
                         valid = false;
                         break;
                     }
@@ -135,18 +124,7 @@ fn solve_part_2(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
                 PassportField::IssueYear => {
                     // Get string and check length
                     let val = passport.get(&field).unwrap();
-                    if val.len() != 4 {
-                        valid = false;
-                        break;
-                    }
-                    // Convert string to int and check if it falls outside of valid range
-                    let val = val.parse::<u64>();
-                    if val.is_err() {
-                        valid = false;
-                        break;
-                    }
-                    let val = val.unwrap();
-                    if val < 2010 || val > 2020 {
+                    if !check_year_string_range(&val, 2010, 2020) {
                         valid = false;
                         break;
                     }
@@ -154,18 +132,7 @@ fn solve_part_2(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
                 PassportField::ExpirationYear => {
                     // Get string and check length
                     let val = passport.get(&field).unwrap();
-                    if val.len() != 4 {
-                        valid = false;
-                        break;
-                    }
-                    // Convert string to int and check if it falls outside of valid range
-                    let val = val.parse::<u64>();
-                    if val.is_err() {
-                        valid = false;
-                        break;
-                    }
-                    let val = val.unwrap();
-                    if val < 2020 || val > 2030 {
+                    if !check_year_string_range(&val, 2020, 2030) {
                         valid = false;
                         break;
                     }
@@ -232,6 +199,24 @@ fn solve_part_2(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
         }
     }
     return valid_count;
+}
+
+/// Checks if the given input string is a valid year value between (inclusive) the given lower and
+/// upper bounds.
+fn check_year_string_range(input: &String, lower: u64, upper: u64) -> bool {
+    if input.len() != 4 {
+        return false;
+    }
+    // Convert string to int and check if it falls outside of valid range
+    let val = input.parse::<u64>();
+    if val.is_err() {
+        return false;
+    }
+    let val = val.unwrap();
+    if val < lower || val > upper {
+        return false;
+    }
+    return true;
 }
 
 #[cfg(test)]

@@ -93,5 +93,162 @@ fn solve_part_1(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
 
 #[aoc(day4, part2)]
 fn solve_part_2(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
-    unimplemented!();
+    let mut valid_count = 0;
+    let height_cm_regex = Regex::new(r"(\d+)cm").unwrap();
+    let height_in_regex = Regex::new(r"(\d+)in").unwrap();
+    let hair_colour_regex = Regex::new(r"#([0-9a-f]{6})").unwrap();
+    let eye_colour_regex = Regex::new(r"(amb|blu|brn|gry|grn|hzl|oth)").unwrap();
+    let passport_id_regex = Regex::new(r"([0-9]{9})").unwrap();
+    for passport in passports {
+        let mut valid = true;
+        for field in PassportField::into_enum_iter() {
+            // Country ID field is optional, so do not check
+            if field == PassportField::CountryID {
+                continue;
+            }
+            // Check if required field if present
+            if !passport.contains_key(&field) {
+                valid = false;
+                break;
+            }
+            // Now, check the more strict rules for validity
+            match field {
+                PassportField::BirthYear => {
+                    // Get string and check length
+                    let val = passport.get(&field).unwrap();
+                    if val.len() != 4 {
+                        valid = false;
+                        break;
+                    }
+                    // Convert string to int and check if it falls outside of valid range
+                    let val = val.parse::<u64>();
+                    if val.is_err() {
+                        valid = false;
+                        break;
+                    }
+                    let val = val.unwrap();
+                    if val < 1920 || val > 2002 {
+                        valid = false;
+                        break;
+                    }
+                },
+                PassportField::IssueYear => {
+                    // Get string and check length
+                    let val = passport.get(&field).unwrap();
+                    if val.len() != 4 {
+                        valid = false;
+                        break;
+                    }
+                    // Convert string to int and check if it falls outside of valid range
+                    let val = val.parse::<u64>();
+                    if val.is_err() {
+                        valid = false;
+                        break;
+                    }
+                    let val = val.unwrap();
+                    if val < 2010 || val > 2020 {
+                        valid = false;
+                        break;
+                    }
+                },
+                PassportField::ExpirationYear => {
+                    // Get string and check length
+                    let val = passport.get(&field).unwrap();
+                    if val.len() != 4 {
+                        valid = false;
+                        break;
+                    }
+                    // Convert string to int and check if it falls outside of valid range
+                    let val = val.parse::<u64>();
+                    if val.is_err() {
+                        valid = false;
+                        break;
+                    }
+                    let val = val.unwrap();
+                    if val < 2020 || val > 2030 {
+                        valid = false;
+                        break;
+                    }
+                },
+                PassportField::Height => {
+                    let val = passport.get(&field).unwrap();
+                    if val.ends_with("cm") {
+                        let caps = height_cm_regex.captures(val).unwrap();
+                        // Valid line should only have one value
+                        if caps.len() == 2 {
+                            let val = caps[1].parse::<u64>().unwrap();
+                            if val < 150 || val > 193 {
+                                valid = false;
+                                break;
+                            }
+                        } else {
+                            valid = false;
+                            break;
+                        }
+                    } else if val.ends_with("in") {
+                        let caps = height_in_regex.captures(val).unwrap();
+                        // Valid line should only have one value
+                        if caps.len() == 2 {
+                            let val = caps[1].parse::<u64>().unwrap();
+                            if val < 59 || val > 76 {
+                                valid = false;
+                                break;
+                            }
+                        } else {
+                            valid = false;
+                            break;
+                        }
+                    } else {
+                        valid = false;
+                        break;
+                    }
+                },
+                PassportField::HairColour => {
+                    let val = passport.get(&field).unwrap();
+                    if !hair_colour_regex.is_match(val) || val.len() != 7 {
+                        valid = false;
+                        break;
+                    }
+                },
+                PassportField::EyeColour => {
+                    let val = passport.get(&field).unwrap();
+                    if !eye_colour_regex.is_match(val) {
+                        valid = false;
+                        break;
+                    }
+                },
+                PassportField::PassportID => {
+                    let val = passport.get(&field).unwrap();
+                    if !passport_id_regex.is_match(val) || val.len() != 9 {
+                        valid = false;
+                        break;
+                    }
+                },
+                PassportField::CountryID => ()
+            }
+        }
+        if valid {
+            valid_count += 1;
+        }
+    }
+    return valid_count;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_d04_p1_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day4.txt").unwrap());
+        let result = solve_part_1(&input);
+        assert_eq!(264, result);
+    }
+
+    #[test]
+    fn test_d04_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day4.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(224, result);
+    }
 }

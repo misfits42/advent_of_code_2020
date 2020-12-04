@@ -12,7 +12,7 @@ enum PassportField {
     HairColour,
     EyeColour,
     PassportID,
-    CountryID
+    CountryID,
 }
 
 impl PassportField {
@@ -26,7 +26,7 @@ impl PassportField {
             "ecl" => return Some(PassportField::EyeColour),
             "pid" => return Some(PassportField::PassportID),
             "cid" => return Some(PassportField::CountryID),
-            _ => return None
+            _ => return None,
         }
     }
 }
@@ -94,13 +94,18 @@ fn solve_part_1(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
 #[aoc(day4, part2)]
 fn solve_part_2(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
     let mut valid_count = 0;
-    let height_cm_regex = Regex::new(r"(\d+)cm").unwrap();
-    let height_in_regex = Regex::new(r"(\d+)in").unwrap();
-    let hair_colour_regex = Regex::new(r"#([0-9a-f]{6})").unwrap();
-    let eye_colour_regex = Regex::new(r"(amb|blu|brn|gry|grn|hzl|oth)").unwrap();
-    let passport_id_regex = Regex::new(r"([0-9]{9})").unwrap();
+    // Create regexes to help with validity checking
+    let byr_regex = Regex::new(r"^19[2-9][0-9]|200[0-2]$").unwrap();
+    let iyr_regex = Regex::new(r"^201[0-9]|2020$").unwrap();
+    let eyr_regex = Regex::new(r"^202[0-9]|2030$").unwrap();
+    let hgt_cm_regex = Regex::new(r"^(1[5-8][0-9]|19[0-3])cm$").unwrap();
+    let hgt_in_regex = Regex::new(r"^(59|6[0-9]|7[0-6])in$").unwrap();
+    let hcl_regex = Regex::new(r"^#([0-9a-f]{6})$").unwrap();
+    let ecl_regex = Regex::new(r"^(amb|blu|brn|gry|grn|hzl|oth)$").unwrap();
+    let pid_regex = Regex::new(r"^([0-9]{9})$").unwrap();
     for passport in passports {
-        let mut valid = true;
+        // Assume passport is valid, until proven otherwise
+        let mut valid_passport = true;
         for field in PassportField::into_enum_iter() {
             // Country ID field is optional, so do not check
             if field == PassportField::CountryID {
@@ -108,115 +113,35 @@ fn solve_part_2(passports: &Vec<HashMap<PassportField, String>>) -> u64 {
             }
             // Check if required field if present
             if !passport.contains_key(&field) {
-                valid = false;
+                valid_passport = false;
                 break;
             }
             // Now, check the more strict rules for validity
-            match field {
-                PassportField::BirthYear => {
-                    // Get string and check length
-                    let val = passport.get(&field).unwrap();
-                    if !check_year_string_range(&val, 1920, 2002) {
-                        valid = false;
-                        break;
-                    }
-                },
-                PassportField::IssueYear => {
-                    // Get string and check length
-                    let val = passport.get(&field).unwrap();
-                    if !check_year_string_range(&val, 2010, 2020) {
-                        valid = false;
-                        break;
-                    }
-                },
-                PassportField::ExpirationYear => {
-                    // Get string and check length
-                    let val = passport.get(&field).unwrap();
-                    if !check_year_string_range(&val, 2020, 2030) {
-                        valid = false;
-                        break;
-                    }
-                },
+            let field_raw = passport.get(&field).unwrap();
+            let valid_field = match field {
+                PassportField::BirthYear => byr_regex.is_match(field_raw),
+                PassportField::IssueYear => iyr_regex.is_match(field_raw),
+                PassportField::ExpirationYear => eyr_regex.is_match(field_raw),
                 PassportField::Height => {
-                    let val = passport.get(&field).unwrap();
-                    if val.ends_with("cm") {
-                        let caps = height_cm_regex.captures(val).unwrap();
-                        // Valid line should only have one value
-                        if caps.len() == 2 {
-                            let val = caps[1].parse::<u64>().unwrap();
-                            if val < 150 || val > 193 {
-                                valid = false;
-                                break;
-                            }
-                        } else {
-                            valid = false;
-                            break;
-                        }
-                    } else if val.ends_with("in") {
-                        let caps = height_in_regex.captures(val).unwrap();
-                        // Valid line should only have one value
-                        if caps.len() == 2 {
-                            let val = caps[1].parse::<u64>().unwrap();
-                            if val < 59 || val > 76 {
-                                valid = false;
-                                break;
-                            }
-                        } else {
-                            valid = false;
-                            break;
-                        }
-                    } else {
-                        valid = false;
-                        break;
-                    }
-                },
-                PassportField::HairColour => {
-                    let val = passport.get(&field).unwrap();
-                    if !hair_colour_regex.is_match(val) || val.len() != 7 {
-                        valid = false;
-                        break;
-                    }
-                },
-                PassportField::EyeColour => {
-                    let val = passport.get(&field).unwrap();
-                    if !eye_colour_regex.is_match(val) {
-                        valid = false;
-                        break;
-                    }
-                },
-                PassportField::PassportID => {
-                    let val = passport.get(&field).unwrap();
-                    if !passport_id_regex.is_match(val) || val.len() != 9 {
-                        valid = false;
-                        break;
-                    }
-                },
-                PassportField::CountryID => ()
+                    hgt_cm_regex.is_match(field_raw) || hgt_in_regex.is_match(field_raw)
+                }
+                PassportField::HairColour => hcl_regex.is_match(field_raw),
+                PassportField::EyeColour => ecl_regex.is_match(field_raw),
+                PassportField::PassportID => pid_regex.is_match(field_raw),
+                PassportField::CountryID => true, // CountryID field is optional, so ignore
+            };
+            // Check if current field is valid
+            if !valid_field {
+                valid_passport = false;
+                break;
             }
         }
-        if valid {
+        // If current passport is valid, increase valid count
+        if valid_passport {
             valid_count += 1;
         }
     }
     return valid_count;
-}
-
-/// Checks if the given input string is a valid year value between (inclusive) the given lower and
-/// upper bounds.
-fn check_year_string_range(input: &String, lower: u64, upper: u64) -> bool {
-    if input.len() != 4 {
-        return false;
-    }
-    // Convert string to int and check if it falls outside of valid range
-    let val = input.parse::<u64>();
-    if val.is_err() {
-        return false;
-    }
-    let val = val.unwrap();
-    if val < lower || val > upper {
-        return false;
-    }
-    return true;
 }
 
 #[cfg(test)]

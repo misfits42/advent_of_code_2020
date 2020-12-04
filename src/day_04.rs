@@ -35,10 +35,11 @@ impl PassportField {
 fn generate_input(input: &str) -> Vec<HashMap<PassportField, String>> {
     let mut passports: Vec<HashMap<PassportField, String>> = vec![];
     let mut lines = input.lines();
-    let field_regex = Regex::new(r"(.*):(.*)").unwrap();
+    let field_regex = Regex::new(r"(byr|iyr|eyr|hgt|hcl|ecl|pid|cid):(.*)").unwrap();
+    // Outer loop - process all blocks representing passports
     loop {
         let mut end_of_file = false;
-        // Inner loop
+        // Inner loop - process current passport block
         let mut passport: HashMap<PassportField, String> = HashMap::new();
         loop {
             // Check if end-of-file reached
@@ -55,10 +56,14 @@ fn generate_input(input: &str) -> Vec<HashMap<PassportField, String>> {
             // Extract passport fields from current line
             let pairs = line.split(" ");
             for pair in pairs {
-                let captures = field_regex.captures(pair).unwrap();
-                let field = PassportField::from_string(&captures[1]).unwrap();
-                let value = captures[2].to_string();
-                passport.insert(field, value);
+                if field_regex.is_match(pair) {
+                    let captures = field_regex.captures(pair).unwrap();
+                    let field = PassportField::from_string(&captures[1]).unwrap();
+                    let value = captures[2].to_string();
+                    passport.insert(field, value);
+                } else {
+                    panic!("Day 4 - malformed input file!");
+                }
             }
         }
         passports.push(passport);

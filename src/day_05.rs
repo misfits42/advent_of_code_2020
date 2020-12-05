@@ -28,9 +28,27 @@ fn solve_part_1(seat_specs: &Vec<String>) -> u64 {
 
 #[aoc(day5, part2)]
 fn solve_part_2(seat_specs: &Vec<String>) -> u64 {
-    unimplemented!();
+    let mut seat_ids: Vec<u64> = vec![];
+    // Calculate all seat IDs from list of boarding passes
+    for seat_spec in seat_specs {
+        let seat_id = calculate_seat_id(seat_spec);
+        seat_ids.push(seat_id);
+    }
+    // Sort the list
+    seat_ids.sort();
+    // Read through the sorted seat IDs to look for the gap in seat IDs
+    for i in 1..seat_ids.len() {
+        let previous_id = seat_ids[i - 1];
+        let current_id = seat_ids[i];
+        if current_id - previous_id > 1 {
+            return current_id - 1;
+        }
+    }
+    panic!("Day 5 Part 2 - should not get here!");
 }
 
+/// Calculates the seat ID from the seat specification - consisting of 10 letters, the first 7 being
+/// either 'F' or 'B' and the last 3 being either 'L' or 'R'.
 fn calculate_seat_id(seat_spec: &String) -> u64 {
     let chars = seat_spec.chars().collect::<Vec<char>>();
     // Start by finding row number
@@ -53,7 +71,25 @@ fn calculate_seat_id(seat_spec: &String) -> u64 {
             c_lower = c_upper - (c_upper - c_lower) / 2;
         }
     }
-    println!("seat_spec: {} ---- row: {} ---- column: {} ---- seat_id: {}", seat_spec, r_lower, c_lower, r_lower * 8 + c_lower);
     // Now we have found the row and column number
     return r_lower * 8 + c_lower;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_d05_p1_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day5.txt").unwrap());
+        let result = solve_part_1(&input);
+        assert_eq!(955, result);
+    }
+
+    #[test]
+    fn test_d05_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day5.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(569, result);
+    }
 }

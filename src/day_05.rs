@@ -1,6 +1,6 @@
 #[aoc_generator(day5)]
-fn generate_input(input: &str) -> Vec<String> {
-    let mut seat_specs: Vec<String> = vec![];
+fn generate_input(input: &str) -> Vec<u64> {
+    let mut seat_specs: Vec<u64> = vec![];
     for line in input.lines() {
         let line = line.trim();
         if line.is_empty() {
@@ -9,34 +9,22 @@ fn generate_input(input: &str) -> Vec<String> {
         if line.len() != 10 {
             panic!("Day 5 - input line length incorrect!");
         }
-        seat_specs.push(line.to_string());
+        seat_specs.push(calculate_seat_id(&line.to_string()));
     }
+    // Sort the calculated seat IDs
+    seat_specs.sort();
     return seat_specs;
 }
 
 #[aoc(day5, part1)]
-fn solve_part_1(seat_specs: &Vec<String>) -> u64 {
-    let mut highest_seat_id = 0;
-    for seat_spec in seat_specs {
-        let seat_id = calculate_seat_id(seat_spec);
-        if seat_id > highest_seat_id {
-            highest_seat_id = seat_id;
-        }
-    }
-    return highest_seat_id;
+fn solve_part_1(seat_ids: &Vec<u64>) -> u64 {
+    // Seat IDs are already sorted, so highest seat ID is last value
+    return *seat_ids.last().unwrap();
 }
 
 #[aoc(day5, part2)]
-fn solve_part_2(seat_specs: &Vec<String>) -> u64 {
-    let mut seat_ids: Vec<u64> = vec![];
-    // Calculate all seat IDs from list of boarding passes
-    for seat_spec in seat_specs {
-        let seat_id = calculate_seat_id(seat_spec);
-        seat_ids.push(seat_id);
-    }
-    // Sort the list
-    seat_ids.sort();
-    // Read through the sorted seat IDs to look for the gap in seat IDs
+fn solve_part_2(seat_ids: &Vec<u64>) -> u64 {
+    // Seat IDs are already sorted by the generator function - look for gap in seat IDs
     for i in 1..seat_ids.len() {
         let previous_id = seat_ids[i - 1];
         let current_id = seat_ids[i];

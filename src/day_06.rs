@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
 #[aoc_generator(day6)]
-fn generate_input(input: &str) -> Vec<Vec<String>> {
-    let mut groups: Vec<Vec<String>> = vec![];
+fn generate_input(input: &str) -> Vec<Vec<HashSet<char>>> {
+    let mut groups: Vec<Vec<HashSet<char>>> = vec![];
     let mut lines = input.lines();
     loop {
         let mut end_of_input = false;
-        let mut group: Vec<String> = vec![];
+        let mut group: Vec<HashSet<char>> = vec![];
         loop {
             // Check if end of input reached (no more lines to read)
             let line = lines.next();
@@ -19,7 +19,7 @@ fn generate_input(input: &str) -> Vec<Vec<String>> {
             if line.is_empty() {
                 break;
             }
-            group.push(line.to_string());
+            group.push(line.chars().collect::<HashSet<char>>());
         }
         groups.push(group);
         if end_of_input {
@@ -29,47 +29,35 @@ fn generate_input(input: &str) -> Vec<Vec<String>> {
 }
 
 #[aoc(day6, part1)]
-fn solve_part_1(groups: &Vec<Vec<String>>) -> usize {
-    let mut yes_total = 0;
+fn solve_part_1(groups: &Vec<Vec<HashSet<char>>>) -> usize {
+    let mut total_count = 0;
     for group in groups {
-        let mut group_seen_yes: HashSet<char> = HashSet::new();
+        // Record the questions that at least one person in the group answered "yes" to
+        let mut group_set: HashSet<char> = HashSet::new();
         for entry in group {
-            for c in entry.chars() {
-                group_seen_yes.insert(c);
-            }
+            group_set = group_set.union(&entry).map(|c| *c).collect::<HashSet<char>>();
         }
-        yes_total += group_seen_yes.len();
+        total_count += group_set.len();
     }
-    return yes_total;
+    return total_count;
 }
 
 #[aoc(day6, part2)]
-fn solve_part_2(groups: &Vec<Vec<String>>) -> usize {
-    let mut common_yes_total = 0;
+fn solve_part_2(groups: &Vec<Vec<HashSet<char>>>) -> usize {
+    let mut total_count = 0; // Recount total of counts across all groups
     for group in groups {
-        let mut group_common_yes: HashSet<char> = HashSet::new();
+        // Record the questions that everyone in the group answered "yes" to
+        let mut overlap: HashSet<char> = HashSet::new();
         for i in 0..group.len() {
-            // Determine the unique characters in the current group entry (form)
-            let entry_uniq_chars = group[i].chars().collect::<HashSet<char>>();
             if i == 0 { // Initialise yes record on first group entry
-                group_common_yes = entry_uniq_chars.clone();
+                overlap = overlap.union(&group[i]).map(|c| *c).collect::<HashSet<char>>();
             } else {
-                // Check which yes questions seen common so far are not present in current entry
-                let mut c_to_remove: Vec<char> = vec![];
-                for c in group_common_yes.iter() {
-                    if !entry_uniq_chars.contains(&c) {
-                        c_to_remove.push(*c);
-                    }
-                }
-                // Remove elements from group common that were in current entry but not seen yet
-                for c in c_to_remove {
-                    group_common_yes.remove(&c);
-                }
+                overlap = overlap.intersection(&group[i]).map(|c| *c).collect::<HashSet<char>>();
             }
         }
-        common_yes_total += group_common_yes.len();
+        total_count += overlap.len();
     }
-    return common_yes_total;
+    return total_count;
 }
 
 #[cfg(test)]

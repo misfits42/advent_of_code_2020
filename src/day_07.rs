@@ -75,6 +75,9 @@ fn check_for_inner_bag(bag_rules: &HashMap<String, HashMap<String, u64>>, curren
 /// Counts the number of bags contained within the current bag.
 fn count_inner_bags(bag_rules: &HashMap<String, HashMap<String, u64>>, current_bag: &str) -> u64 {
     let mut count = 0;
+    if !bag_rules.contains_key(current_bag) {
+        return count;
+    }
     for (inner_bag, quantity) in bag_rules.get(current_bag).unwrap() {
         // Add the number of inner bags and all bags contained within that number of inner bags
         count += quantity * (1 + count_inner_bags(bag_rules, inner_bag));

@@ -55,7 +55,7 @@ fn solve_part_2(xmas_stream: &Vec<u64>) -> u64 {
 
 /// Finds the first invalid number in the XMAS stream.
 fn find_invalid_number(xmas_stream: &Vec<u64>, preamble_size: usize) -> Option<u64> {
-    for i in 25..xmas_stream.len() {
+    for i in preamble_size..xmas_stream.len() {
         if !check_for_previous_sum(xmas_stream, i, preamble_size) {
             return Some(xmas_stream[i]);
         }

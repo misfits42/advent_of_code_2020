@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[aoc_generator(day10)]
 fn generate_input(input: &str) -> Vec<u64> {
     let mut adapters = input.lines().map(|x| x.parse::<u64>().unwrap()).collect::<Vec<u64>>();
@@ -32,6 +34,34 @@ fn solve_part_1(adapters: &Vec<u64>) -> u64 {
         }
     }
     return total_diff_1 * total_diff_3;
+}
+
+#[aoc(day10, part2)]
+fn solve_part_2(adapters: &Vec<u64>) -> u64 {
+    let adapters_set = adapters.iter().map(|x| *x).collect::<HashSet<u64>>();
+    let result = find_adapter_arrangement(&adapters_set, 0);
+    return result;
+}
+
+fn find_adapter_arrangement(adapters: &HashSet<u64>, current_joltage: u64) -> u64 {
+    // Check if there is an adapter that can be connected next
+    let mut count = 0;
+    let mut at_end = true;
+    // println!("Current joltage: {}", current_joltage);
+    for diff in 1..=3 {
+        let check_joltage = current_joltage + diff;
+        if adapters.contains(&check_joltage) {
+            at_end = false;
+            count += find_adapter_arrangement(adapters, check_joltage);
+        }
+    }
+    if at_end {
+        count += 1;
+    }
+    if count > 10000000 {
+        println!("Count: {}", count);
+    }
+    return count;
 }
 
 #[cfg(test)]

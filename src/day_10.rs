@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 #[aoc_generator(day10)]
@@ -38,24 +39,34 @@ fn solve_part_1(adapters: &Vec<u64>) -> u64 {
 
 #[aoc(day10, part2)]
 fn solve_part_2(adapters: &Vec<u64>) -> u64 {
-    let adapters_set = adapters.iter().map(|x| *x).collect::<HashSet<u64>>();
-    let result = find_adapter_arrangement(&adapters_set, 0);
+    let mut adapters_set = adapters.iter().map(|x| *x).collect::<HashSet<u64>>();
+    adapters_set.insert(0);
+    let mut adapters_next: HashMap::<u64, Vec<u64>> = HashMap::new();
+    for adapter in adapters_set.iter() {
+        let mut conns: Vec<u64> = vec![];
+        for diff in 1..=3 {
+            let check_joltage = adapter + diff;
+            if adapters_set.contains(&check_joltage) {
+                conns.push(check_joltage);
+            }
+        }
+        adapters_next.insert(*adapter, conns);
+    }
+    println!("{:?}", adapters_next);
+    let result = find_adapter_arrangement(&adapters_set, &adapters_next, 0);
     return result;
 }
 
-fn find_adapter_arrangement(adapters: &HashSet<u64>, current_joltage: u64) -> u64 {
+fn find_adapter_arrangement(adapters: &HashSet<u64>, adapters_next: &HashMap<u64, Vec<u64>>, current_joltage: u64) -> u64 {
     // Check if there is an adapter that can be connected next
     let mut count = 0;
-    let mut at_end = true;
-    for diff in 1..=3 {
-        let check_joltage = current_joltage + diff;
-        if adapters.contains(&check_joltage) {
-            at_end = false;
-            count += find_adapter_arrangement(adapters, check_joltage);
-        }
-    }
-    if at_end {
+    let next_adapters = adapters_next.get(&current_joltage).unwrap();
+    if next_adapters.is_empty() {
         count += 1;
+    } else {
+        for adapter in next_adapters {
+            count += find_adapter_arrangement(adapters, adapters_next, *adapter);
+        }
     }
     if count > 10000000 {
         println!("Count: {}", count);

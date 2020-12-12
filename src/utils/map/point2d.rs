@@ -39,4 +39,19 @@ impl Point2D {
         self.x += delta_x;
         self.y += delta_y;
     }
+
+    /// Gets the eight surrounding points from the current location. Panics if integer overflow or
+    /// underflow would occur.
+    pub fn get_surrounding_points(&self) -> Vec<Point2D> {
+        let mut output: Vec<Point2D> = vec![];
+        output.push(Point2D::new(self.x, self.y - 1)); // up
+        output.push(Point2D::new(self.x + 1, self.y - 1)); // diag - up right
+        output.push(Point2D::new(self.x + 1, self.y)); // right
+        output.push(Point2D::new(self.x + 1, self.y + 1)); // diag - down right
+        output.push(Point2D::new(self.x, self.y + 1)); // down
+        output.push(Point2D::new(self.x - 1, self.y + 1)); // diag - down left
+        output.push(Point2D::new(self.x - 1, self.y)); // left
+        output.push(Point2D::new(self.x - 1, self.y - 1)); // diag - up left
+        return output;
+    }
 }

@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 
 #[aoc_generator(day10)]
 fn generate_input(input: &str) -> Vec<u64> {
     let mut adapters = input.lines().map(|x| x.parse::<u64>().unwrap()).collect::<Vec<u64>>();
+    adapters.push(0);
     adapters.sort();
     return adapters;
 }
@@ -39,37 +41,59 @@ fn solve_part_1(adapters: &Vec<u64>) -> u64 {
 
 #[aoc(day10, part2)]
 fn solve_part_2(adapters: &Vec<u64>) -> u64 {
+    println!("Adapters: {:?}", adapters);
     let mut adapters_set = adapters.iter().map(|x| *x).collect::<HashSet<u64>>();
-    adapters_set.insert(0);
-    let mut adapters_next: HashMap::<u64, Vec<u64>> = HashMap::new();
+    let mut adapters_conn_from: HashMap::<u64, HashSet<u64>> = HashMap::new();
+    // For each adapter, determine which other adapters could be validly connected to it
     for adapter in adapters_set.iter() {
-        let mut conns: Vec<u64> = vec![];
+        let mut conn_from: HashSet<u64> = HashSet::new();
         for diff in 1..=3 {
             let check_joltage = adapter + diff;
             if adapters_set.contains(&check_joltage) {
-                conns.push(check_joltage);
+                conn_from.insert(check_joltage);
             }
         }
-        adapters_next.insert(*adapter, conns);
+        adapters_conn_from.insert(*adapter, conn_from);
     }
-    println!("{:?}", adapters_next);
-    let result = find_adapter_arrangement(&adapters_set, &adapters_next, 0);
+    // Determine sets of adapters with joltage ratings separated by only 1 joltage
+    let mut adapter_groups: VecDeque<HashSet<u64>> = VecDeque::new();
+    let mut in_group = false;
+    for i in 1..adapters.len() {
+        // Compare current to previous
+        let diff = adapters[i] - adapters[i - 1];
+        if diff == 1 {
+            if !in_group {
+                adapter_groups.push_back(HashSet::new());
+                in_group = true;
+            }
+            adapter_groups.back_mut().unwrap().insert(adapters[i - 1]);
+            adapter_groups.back_mut().unwrap().insert(adapters[i]);
+        } else {
+            in_group = false;
+        }
+    }
+    // Determine number of possible paths in each group, multiplying counts to get overall answer
+    let mut result: u64 = 1;
+    for group in adapter_groups {
+        let start = *group.iter().min().unwrap();
+        let end = *group.iter().max().unwrap();
+        let count = count_adapter_arrangements(&adapters_conn_from, start, end);
+        result *= count;
+    }
     return result;
 }
 
-fn find_adapter_arrangement(adapters: &HashSet<u64>, adapters_next: &HashMap<u64, Vec<u64>>, current_joltage: u64) -> u64 {
-    // Check if there is an adapter that can be connected next
+fn count_adapter_arrangements(adapters_next: &HashMap<u64, HashSet<u64>>, current_joltage: u64,
+        target_joltage: u64) -> u64
+{
     let mut count = 0;
-    let next_adapters = adapters_next.get(&current_joltage).unwrap();
-    if next_adapters.is_empty() {
+    let next_options = adapters_next.get(&current_joltage).unwrap();
+    if current_joltage == target_joltage {
         count += 1;
     } else {
-        for adapter in next_adapters {
-            count += find_adapter_arrangement(adapters, adapters_next, *adapter);
+        for next in next_options {
+            count += count_adapter_arrangements(adapters_next, *next, target_joltage);
         }
-    }
-    if count > 10000000 {
-        println!("Count: {}", count);
     }
     return count;
 }
@@ -83,6 +107,13 @@ mod tests {
         let input = generate_input(&std::fs::read_to_string("./input/2020/day10.txt").unwrap());
         let result = solve_part_1(&input);
         assert_eq!(2170, result);
+    }
+
+    #[test]
+    fn test_d10_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day10.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(24803586664192, result);
     }
 
     #[test]

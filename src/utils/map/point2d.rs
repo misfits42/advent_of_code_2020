@@ -54,4 +54,9 @@ impl Point2D {
         output.push(Point2D::new(self.x - 1, self.y - 1)); // diag - up left
         return output;
     }
+
+    /// Calculates the Manhattan distance between the current point and the other point.
+    pub fn calculate_manhattan_distance(&self, other: &Point2D) -> u64 {
+        return (self.x - other.x).abs() as u64 + (self.y - other.y).abs() as u64;
+    }
 }

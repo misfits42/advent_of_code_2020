@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 
@@ -41,20 +40,6 @@ fn solve_part_1(adapters: &Vec<u64>) -> u64 {
 
 #[aoc(day10, part2)]
 fn solve_part_2(adapters: &Vec<u64>) -> u64 {
-    println!("Adapters: {:?}", adapters);
-    let mut adapters_set = adapters.iter().map(|x| *x).collect::<HashSet<u64>>();
-    let mut adapters_conn_from: HashMap::<u64, HashSet<u64>> = HashMap::new();
-    // For each adapter, determine which other adapters could be validly connected to it
-    for adapter in adapters_set.iter() {
-        let mut conn_from: HashSet<u64> = HashSet::new();
-        for diff in 1..=3 {
-            let check_joltage = adapter + diff;
-            if adapters_set.contains(&check_joltage) {
-                conn_from.insert(check_joltage);
-            }
-        }
-        adapters_conn_from.insert(*adapter, conn_from);
-    }
     // Determine sets of adapters with joltage ratings separated by only 1 joltage
     let mut adapter_groups: VecDeque<HashSet<u64>> = VecDeque::new();
     let mut in_group = false;
@@ -74,28 +59,20 @@ fn solve_part_2(adapters: &Vec<u64>) -> u64 {
     }
     // Determine number of possible paths in each group, multiplying counts to get overall answer
     let mut result: u64 = 1;
+    let base: u64 = 2;
     for group in adapter_groups {
-        let start = *group.iter().min().unwrap();
-        let end = *group.iter().max().unwrap();
-        let count = count_adapter_arrangements(&adapters_conn_from, start, end);
+        // Calculate number of paths possible within group based on there length
+        let count = {
+            let len = group.len() as u32;
+            if len == 5 {
+                base.pow(len - 2) - 1
+            } else {
+                base.pow(len - 2)
+            }
+        };
         result *= count;
     }
     return result;
-}
-
-fn count_adapter_arrangements(adapters_next: &HashMap<u64, HashSet<u64>>, current_joltage: u64,
-        target_joltage: u64) -> u64
-{
-    let mut count = 0;
-    let next_options = adapters_next.get(&current_joltage).unwrap();
-    if current_joltage == target_joltage {
-        count += 1;
-    } else {
-        for next in next_options {
-            count += count_adapter_arrangements(adapters_next, *next, target_joltage);
-        }
-    }
-    return count;
 }
 
 #[cfg(test)]

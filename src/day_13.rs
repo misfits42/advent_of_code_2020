@@ -19,30 +19,24 @@ impl BusTimer {
         return self.offset;
     }
 
-    // pub fn get_current(&self) -> u64 {
-    //     return self.current;
-    // }
-
     pub fn get_bus_id(&self) -> u64 {
         return self.bus_id;
     }
 
     pub fn calculate_next_arrival_after_timestamp(&mut self, timestamp: u64) -> u64 {
-        let rounds = (timestamp - self.offset) / self.bus_id;
-        let next_timestamp = self.bus_id * (rounds + 1) + self.offset;
+        let diff = {
+            if timestamp < self.offset {
+                0
+            } else {
+                timestamp - self.offset
+            }
+        };
+        let rounds = diff / self.bus_id;
+        let next_timestamp = self.bus_id * (rounds + 1); // + self.offset;
         self.current = next_timestamp;
         return self.current;
     }
 }
-
-// impl Iterator for BusTimer {
-//     type Item = u64;
-
-//     fn next(&mut self) -> Option<u64> {
-//         self.current += self.bus_id;
-//         return Some(self.current);
-//     }
-// }
 
 #[aoc_generator(day13)]
 fn generate_input(input: &str) -> (u64, Vec<(u64, u64)>) {
@@ -84,45 +78,60 @@ fn solve_part_1(input: &(u64, Vec<(u64, u64)>)) -> u64 {
 
 #[aoc(day13, part2)]
 fn solve_part_2(input: &(u64, Vec<(u64, u64)>)) -> u64 {
-    // Extract the bus IDs and sort
-    let mut bus_ids = input.1.iter().map(|x| x.1).collect::<Vec<u64>>();
-    bus_ids.sort();
+    // Extract the bus IDs
+    let bus_ids = input.1.iter().map(|x| x.1).collect::<Vec<u64>>();
     // Generate bus timers
-    println!("Bus slots: {:?}", input.1);
     let mut bus_timers: HashMap<u64, BusTimer> = HashMap::new();
     for (offset, bus_id) in input.1.iter() {
         let bus_timer = BusTimer::new(*bus_id, *offset);
         bus_timers.insert(*bus_id, bus_timer);
     }
     // Determine initial start and end bounds for bus arrival period
-    let mut period_start = 0;
-    let mut period_end = bus_timers.get(&bus_ids[0]).unwrap().get_offset();
+    let mut period_start = 100000000000000;
+    let mut period_end = period_start + bus_ids[0];
+    let mut periods_checked = 0;
     loop {
-        // Update period start and end
-        period_start = period_end; //bus_timers.get_mut(&bus_ids[0]).unwrap().calculate_next_arrival_after_timestamp(period_end - 1);
-        period_end = period_start + bus_ids[0];
+        periods_checked += 1;
+        if periods_checked % 10000000 == 0 {
+             println!("Period start: {}", period_start);
+        }
         let mut last_time = period_start;
         let mut success = true;
-        // println!("[+] mod: {}", period_start % 7);
-        //if period_start > 106800 && period_start < 106900 {
-            println!("Start: {} ---- End: {}", period_start, period_end);
-        //}
         for i in 1..bus_ids.len() {
             let bus_id = bus_ids[i];
             // Generate next arrival time
-            let next_time = bus_timers.get_mut(&bus_id).unwrap().calculate_next_arrival_after_timestamp(last_time);
-            println!(">>> bus_id: {} ---- next_time: {}", bus_id, next_time);
-            if next_time > period_end {
+            last_time = bus_timers.get_mut(&bus_id).unwrap().calculate_next_arrival_after_timestamp(last_time);
+            // Calculate offset from period start and check if it matches the original bus offset
+            let offset = {
+                if period_start == 0 {
+                    last_time
+                } else {
+                    last_time % period_start
+                }
+            };
+            // Check if we have run over the end of the current period
+            if last_time > period_end {
                 success = false;
                 break;
             }
-            last_time = next_time;
+            if offset != bus_timers.get(&bus_id).unwrap().get_offset() {
+                success = false;
+                break;
+            }
         }
+        // We have found the success condition
         if success {
             return period_start;
-        } else {
-            // println!(">>> No good with period starting at timestamp: {}", period_start);
         }
+        // Current iteration not successful - go to next
+        period_start = {
+            if last_time > period_end {
+                (last_time / bus_ids[0] + 1) * bus_ids[0]
+            } else {
+                period_end
+            }
+        };
+        period_end = period_start + bus_ids[0];
     }
 }
 
@@ -144,5 +153,59 @@ mod tests {
         );
         let result = solve_part_1(&input);
         assert_eq!(295, result);
+    }
+
+    #[test]
+    fn test_d13_p2_001() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day13_test_001.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(1068781, result);
+    }
+
+    #[test]
+    fn test_d13_p2_002() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day13_test_002.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(3417, result);
+    }
+
+    #[test]
+    fn test_d13_p2_003() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day13_test_003.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(754018, result);
+    }
+
+    #[test]
+    fn test_d13_p2_004() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day13_test_004.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(779210, result);
+    }
+
+    #[test]
+    fn test_d13_p2_005() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day13_test_005.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(1261476, result);
+    }
+
+    #[test]
+    fn test_d13_p2_006() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day13_test_006.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(1202161486, result);
     }
 }

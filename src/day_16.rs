@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
+use std::ops::RangeInclusive;
 
 use regex::Regex;
 
@@ -9,9 +11,32 @@ enum InputParseState {
     NearbyTickets,
 }
 
+struct TicketRule {
+    ranges: Vec<RangeInclusive<u64>>,
+}
+
+impl TicketRule {
+    pub fn new() -> Self {
+        TicketRule { ranges: vec![] }
+    }
+
+    pub fn add_new_range_inclusive(&mut self, lower: u64, upper: u64) {
+        self.ranges.push(RangeInclusive::new(lower, upper));
+    }
+
+    pub fn check_value_validity(&self, value: u64) -> bool {
+        for range in self.ranges.iter() {
+            if range.contains(&value) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 /// Stores the details captured in the train ticket dossier gathered in AOC 2020 Day 16.
 struct TrainTicketDossier {
-    field_rules: HashMap<String, Vec<(u64, u64)>>,
+    field_rules: HashMap<String, TicketRule>,
     own_ticket: Vec<u64>,
     nearby_tickets: Vec<Vec<u64>>,
 }
@@ -21,7 +46,7 @@ fn generate_input(input: &str) -> TrainTicketDossier {
     let field_rule_regex = Regex::new(r"^(.*): (\d+)-(\d+) or (\d+)-(\d+)$").unwrap();
     let mut input_parse_state = InputParseState::FieldRules;
     // Set up variables to store data for train ticket dossier
-    let mut field_rules: HashMap<String, Vec<(u64, u64)>> = HashMap::new();
+    let mut field_rules: HashMap<String, TicketRule> = HashMap::new();
     let mut own_ticket: Vec<u64> = vec![];
     let mut nearby_tickets: Vec<Vec<u64>> = vec![];
     // Process each line
@@ -46,11 +71,10 @@ fn generate_input(input: &str) -> TrainTicketDossier {
                     let range_1_upper = captures[3].parse::<u64>().unwrap();
                     let range_2_lower = captures[4].parse::<u64>().unwrap();
                     let range_2_upper = captures[5].parse::<u64>().unwrap();
-                    let ranges: Vec<(u64, u64)> = vec![
-                        (range_1_lower, range_1_upper),
-                        (range_2_lower, range_2_upper),
-                    ];
-                    field_rules.insert(field_name, ranges);
+                    let mut ticket_rule = TicketRule::new();
+                    ticket_rule.add_new_range_inclusive(range_1_lower, range_1_upper);
+                    ticket_rule.add_new_range_inclusive(range_2_lower, range_2_upper);
+                    field_rules.insert(field_name, ticket_rule);
                 } else {
                     panic!("Day 16 - malformed input file. Failed during field rule parsing.");
                 }
@@ -83,13 +107,11 @@ fn generate_input(input: &str) -> TrainTicketDossier {
     };
 }
 
-fn check_value_validity(value: u64, field_rules: &HashMap<String, Vec<(u64, u64)>>) -> bool {
-    for (_field_name, rules) in field_rules {
-        for rule in rules {
-            // Check if current ticket value is invalid
-            if value >= rule.0 && value <= rule.1 {
-                return true;
-            }
+/// Checks the validity of the given value against the given record of ticket rules.
+fn check_value_validity(value: u64, field_rules: &HashMap<String, TicketRule>) -> bool {
+    for (_field_name, rule) in field_rules {
+        if rule.check_value_validity(value) {
+            return true;
         }
     }
     return false;
@@ -109,17 +131,84 @@ fn solve_part_1(train_ticket_dossier: &TrainTicketDossier) -> u64 {
     return error_rate;
 }
 
+#[aoc(day16, part2)]
+fn solve_part_2(train_ticket_dossier: &TrainTicketDossier) -> u64 {
+    // Determine what nearby tickets are valid
+    let mut valid_nearby_tickets: Vec<Vec<u64>> = vec![];
+    for ticket in train_ticket_dossier.nearby_tickets.iter() {
+        let mut valid = true;
+        for value in ticket {
+            if !check_value_validity(*value, &train_ticket_dossier.field_rules) {
+                valid = false;
+                break;
+            }
+        }
+        if valid {
+            valid_nearby_tickets.push(ticket.clone());
+        }
+    }
+    // Now determine possible indices for each field
+    let mut unknown_indices: HashMap<String, HashSet<usize>> = HashMap::new();
+    for field_name in train_ticket_dossier.field_rules.keys() {
+        unknown_indices.insert(field_name.clone(), HashSet::new());
+    }
+    for (field_name, rule) in train_ticket_dossier.field_rules.iter() {
+        for i in 0..train_ticket_dossier.own_ticket.len() {
+            let mut all_match = true;
+            for ticket in valid_nearby_tickets.iter() {
+                let value = ticket[i];
+                if !rule.check_value_validity(value) {
+                    all_match = false;
+                    break;
+                }
+            }
+            if all_match {
+                unknown_indices.get_mut(field_name).unwrap().insert(i);
+            }
+        }
+    }
+    // Now determine the index applicable to each field
+    let mut known_indices: HashMap<String, usize> = HashMap::new();
+    while !unknown_indices.is_empty() {
+        // Find field name and index for field with one and only one associated index
+        let (field_name, index) = unknown_indices
+            .iter()
+            .filter(|(_, indices)| indices.len() == 1)
+            .map(|(f, v)| (f.clone(), *v.iter().next().unwrap()))
+            .next()
+            .unwrap();
+        known_indices.insert(field_name.clone(), index);
+        unknown_indices.remove(&field_name);
+        // Remove the index from the record
+        for (_field_name, indices) in unknown_indices.iter_mut() {
+            indices.remove(&index);
+        }
+    }
+    // Now determine product of values in own ticket belonging to field starting with "departure"
+    let product = known_indices
+        .iter()
+        .filter(|(f, _i)| f.starts_with("departure"))
+        .map(|(_f, i)| train_ticket_dossier.own_ticket[*i])
+        .product::<u64>();
+    return product;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_d16_p1_proper() {
-        let input = generate_input(
-            &std::fs::read_to_string("./input/2020/day16.txt").unwrap(),
-        );
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day16.txt").unwrap());
         let result = solve_part_1(&input);
         assert_eq!(19060, result);
+    }
+
+    #[test]
+    fn test_d16_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day16.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(953713095011, result);
     }
 
     #[test]

@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use regex::Regex;
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
@@ -60,11 +62,80 @@ fn solve_part_1(expressions: &Vec<Vec<Token>>) -> u64 {
     return sum_result;
 }
 
-fn evaluate_expression_recursive(exp: &Vec<Token>, index: &mut usize, depth: usize) -> u64 {
+#[aoc(day18, part2)]
+fn solve_part_2(expressions: &Vec<Vec<Token>>) -> u64 {
+    let mut sum_result = 0;
+    for exp in expressions {
+        let exp_rpn = convert_exp_infix_to_rpn(exp);
+        sum_result += evaluate_expression_rpn(&exp_rpn);
+    }
+    return sum_result;
+}
+
+/// Converts an expression in infix notation to Reverse Polish Notation (RPN) (postfix).
+fn convert_exp_infix_to_rpn(exp: &Vec<Token>) -> Vec<Token> {
+    let mut output: Vec<Token> = vec![];
+    let mut op_stack: VecDeque<Token> = VecDeque::new();
+    for token in exp.iter() {
+        let token = *token;
+        match token {
+            Token::Operand { value: _ } => output.push(token),
+            Token::OperatorPlus => op_stack.push_front(token),
+            Token::OperatorMult => {
+                while !op_stack.is_empty() && *op_stack.front().unwrap() == Token::OperatorPlus {
+                    output.push(op_stack.pop_front().unwrap());
+                }
+                op_stack.push_front(token);
+            }
+            Token::ParenOpen => {
+                op_stack.push_front(token);
+            }
+            Token::ParenClose => {
+                while !op_stack.is_empty() && *op_stack.front().unwrap() != Token::ParenOpen {
+                    output.push(op_stack.pop_front().unwrap());
+                }
+                op_stack.pop_front(); // Ignore the left paren
+            }
+        }
+    }
+    while !op_stack.is_empty() {
+        output.push(op_stack.pop_front().unwrap());
+    }
+    return output;
+}
+
+/// Evaluates the given expression in Reverse Polish Notation (postfix)
+fn evaluate_expression_rpn(exp_rpn: &Vec<Token>) -> u64 {
+    let mut result_stack: VecDeque<u64> = VecDeque::new();
+    for token in exp_rpn.iter() {
+        let token = *token;
+        match token {
+            Token::Operand { value } => result_stack.push_front(value),
+            Token::OperatorPlus => {
+                let left = result_stack.pop_front().unwrap();
+                let right = result_stack.pop_front().unwrap();
+                let result = left + right;
+                result_stack.push_front(result);
+            }
+            Token::OperatorMult => {
+                let left = result_stack.pop_front().unwrap();
+                let right = result_stack.pop_front().unwrap();
+                let result = left * right;
+                result_stack.push_front(result);
+            }
+            _ => (),
+        }
+    }
+    return result_stack.pop_front().unwrap();
+}
+
+/// Evaluates the given expression in infix notation, assuming all operators have the same
+/// precedence.
+fn evaluate_expression_recursive(exp_infix: &Vec<Token>, index: &mut usize, depth: usize) -> u64 {
     let mut result = 0;
     let mut last_operator = Token::OperatorPlus;
-    while *index < exp.len() {
-        let token = exp[*index];
+    while *index < exp_infix.len() {
+        let token = exp_infix[*index];
         match token {
             Token::Operand { value } => {
                 if last_operator == Token::OperatorPlus {
@@ -77,7 +148,7 @@ fn evaluate_expression_recursive(exp: &Vec<Token>, index: &mut usize, depth: usi
             Token::OperatorPlus => last_operator = token,
             Token::ParenOpen => {
                 *index += 1;
-                let sub_result = evaluate_expression_recursive(exp, index, depth + 1);
+                let sub_result = evaluate_expression_recursive(exp_infix, index, depth + 1);
                 if last_operator == Token::OperatorPlus {
                     result += sub_result;
                 } else if last_operator == Token::OperatorMult {
@@ -99,11 +170,16 @@ mod tests {
 
     #[test]
     fn test_d18_p1_proper() {
-        let input = generate_input(
-            &std::fs::read_to_string("./input/2020/day18.txt").unwrap(),
-        );
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day18.txt").unwrap());
         let result = solve_part_1(&input);
         assert_eq!(45283905029161, result);
+    }
+
+    #[test]
+    fn test_d18_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day18.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(216975281211165, result);
     }
 
     #[test]
@@ -149,5 +225,50 @@ mod tests {
         );
         let result = solve_part_1(&input);
         assert_eq!(13632, result);
+    }
+
+    #[test]
+    fn test_d18_p2_001() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day18_test_001.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(231, result);
+    }
+
+    #[test]
+    fn test_d18_p2_002() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day18_test_002.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(46, result);
+    }
+
+    #[test]
+    fn test_d18_p2_003() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day18_test_003.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(1445, result);
+    }
+
+    #[test]
+    fn test_d18_p2_004() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day18_test_004.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(669060, result);
+    }
+
+    #[test]
+    fn test_d18_p2_005() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day18_test_005.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(23340, result);
     }
 }

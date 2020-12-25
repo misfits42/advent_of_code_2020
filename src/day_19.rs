@@ -30,7 +30,7 @@ fn solve_part_1(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
     // Generate regex for rule 0
     let rule_0_regex_str = format!(
         "^{}$",
-        generate_regex_str_from_rules(0, &rules_raw, false).unwrap(),
+        generate_regex_str_from_rules(0, &rules_raw).unwrap(),
     );
     let regex = Regex::new(&rule_0_regex_str).unwrap();
     let mut valid_count = 0;
@@ -46,7 +46,7 @@ fn solve_part_1(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
 fn solve_part_2(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
     let mut rules_raw = input.0.clone();
     let messages = input.1.clone();
-    // Make replacements of rules 8 and 11
+    // Make replacements of rules 8 and 11 - amended to allow matching of looped rule
     rules_raw.insert(8, String::from("(42)+"));
     rules_raw.insert(
         11,
@@ -55,7 +55,7 @@ fn solve_part_2(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
     // Generate regex for rule 0
     let rule_0_regex_str = format!(
         "^{}$",
-        generate_regex_str_from_rules(0, &rules_raw, true).unwrap(),
+        generate_regex_str_from_rules(0, &rules_raw).unwrap(),
     );
     let regex = Regex::new(&rule_0_regex_str).unwrap();
     let mut valid_count = 0;
@@ -70,7 +70,6 @@ fn solve_part_2(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
 fn generate_regex_str_from_rules(
     rule_num: u64,
     rules_raw: &HashMap<u64, String>,
-    part_2_loop: bool,
 ) -> Option<String> {
     // Check if the current rule number exists
     if !rules_raw.contains_key(&rule_num) {
@@ -95,7 +94,7 @@ fn generate_regex_str_from_rules(
         .unwrap();
         let new_rule_num = cap[1].parse::<u64>().unwrap();
         let sub_regex =
-            generate_regex_str_from_rules(new_rule_num, rules_raw, part_2_loop).unwrap();
+            generate_regex_str_from_rules(new_rule_num, rules_raw).unwrap();
         regex_str = {
             if sub_regex.len() == 1 {
                 replace_regex

@@ -30,9 +30,33 @@ fn solve_part_1(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
     // Generate regex for rule 0
     let rule_0_regex_str = format!(
         "^{}$",
-        generate_regex_str_from_rules(0, &rules_raw).unwrap()
+        generate_regex_str_from_rules(0, &rules_raw, false).unwrap(),
     );
-    // println!("Regex str ---- {}", rule_0_regex_str);
+    let regex = Regex::new(&rule_0_regex_str).unwrap();
+    let mut valid_count = 0;
+    for message in messages {
+        if regex.is_match(&message) {
+            valid_count += 1;
+        }
+    }
+    return valid_count;
+}
+
+#[aoc(day19, part2)]
+fn solve_part_2(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
+    let mut rules_raw = input.0.clone();
+    let messages = input.1.clone();
+    // Make replacements of rules 8 and 11
+    rules_raw.insert(8, String::from("(42)+"));
+    rules_raw.insert(
+        11,
+        String::from("(42 31)|(42 42 31 31)|(42 42 42 31 31 31)|(42 42 42 42 31 31 31 31)"),
+    );
+    // Generate regex for rule 0
+    let rule_0_regex_str = format!(
+        "^{}$",
+        generate_regex_str_from_rules(0, &rules_raw, true).unwrap(),
+    );
     let regex = Regex::new(&rule_0_regex_str).unwrap();
     let mut valid_count = 0;
     for message in messages {
@@ -46,6 +70,7 @@ fn solve_part_1(input: &(HashMap<u64, String>, Vec<String>)) -> u64 {
 fn generate_regex_str_from_rules(
     rule_num: u64,
     rules_raw: &HashMap<u64, String>,
+    part_2_loop: bool,
 ) -> Option<String> {
     // Check if the current rule number exists
     if !rules_raw.contains_key(&rule_num) {
@@ -63,13 +88,14 @@ fn generate_regex_str_from_rules(
         if cap.len() != 2 || cap.get(1).is_none() {
             continue;
         }
-        let new_rule_num = cap[1].parse::<u64>().unwrap();
-        let sub_regex = generate_regex_str_from_rules(new_rule_num, rules_raw).unwrap();
         let replace_regex = Regex::new(&format!(
-            r"(\s+({})\s+)|(^({})\s+)|(\s+({})$)|^({})$",
-            &cap[1], &cap[1], &cap[1], &cap[1]
+            r"(\s+({})\s+)|(^({})\s+)|(\s+({})$)|^({})$|\(({})\)|\(({})\s+|\s+({})\)",
+            &cap[1], &cap[1], &cap[1], &cap[1], &cap[1], &cap[1], &cap[1]
         ))
         .unwrap();
+        let new_rule_num = cap[1].parse::<u64>().unwrap();
+        let sub_regex =
+            generate_regex_str_from_rules(new_rule_num, rules_raw, part_2_loop).unwrap();
         regex_str = {
             if sub_regex.len() == 1 {
                 replace_regex
@@ -77,9 +103,7 @@ fn generate_regex_str_from_rules(
                     .to_string()
             } else {
                 replace_regex
-                    .replace_all(&regex_str, |_caps: &Captures| {
-                        format!(" ( {} ) ", sub_regex)
-                    })
+                    .replace_all(&regex_str, |_caps: &Captures| format!(" ({}) ", sub_regex))
                     .to_string()
             }
         };
@@ -100,9 +124,27 @@ mod tests {
     }
 
     #[test]
+    fn test_d19_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day19.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(389, result);
+    }
+
+    #[test]
     fn test_d19_p1_002() {
-        let input = generate_input(&std::fs::read_to_string("./input/2020/test/day19_test_002.txt").unwrap());
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day19_test_002.txt").unwrap(),
+        );
         let result = solve_part_1(&input);
         assert_eq!(2, result);
+    }
+
+    #[test]
+    fn test_d19_p2_003() {
+        let input = generate_input(
+            &std::fs::read_to_string("./input/2020/test/day19_test_003.txt").unwrap(),
+        );
+        let result = solve_part_2(&input);
+        assert_eq!(12, result);
     }
 }

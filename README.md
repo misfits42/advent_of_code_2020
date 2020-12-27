@@ -29,7 +29,7 @@ Implemented using the [cargo-aoc](https://github.com/gobanos/cargo-aoc) tool.
 | 19  | 2020-12-26       | 2020-12-26       |
 | 20  |                  |                  |
 | 21  | 2020-12-27       | 2020-12-27       |
-| 22  |                  |                  |
+| 22  | 2020-12-27       |                  |
 | 23  |                  |                  |
 | 24  |                  |                  |
 | 25  |                  |                  |

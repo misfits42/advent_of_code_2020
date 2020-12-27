@@ -194,6 +194,13 @@ mod tests {
     }
 
     #[test]
+    fn test_d21_p2_proper() {
+        let input = generate_input(&std::fs::read_to_string("./input/2020/day21.txt").unwrap());
+        let result = solve_part_2(&input);
+        assert_eq!(String::from("rcqb,cltx,nrl,qjvvcvz,tsqpn,xhnk,tfqsb,zqzmzl"), result);
+    }
+
+    #[test]
     fn test_d21_p1_001() {
         let input = generate_input(
             &std::fs::read_to_string("./input/2020/test/day21_test_001.txt").unwrap(),
